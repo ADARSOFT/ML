@@ -14,6 +14,25 @@ m,n = data.shape
 data_mean = data.mean()
 data_std = data.std()
 data = (data-data_mean)/data_std
+
+current_centroid = data.sample(1).reset_index(drop=True)
+centroids = pd.DataFrame()
+centroids = centroids.append(current_centroid)
+distances_k = pd.DataFrame() #current_centroid.copy()
+k_number = 5
+
+for i in range(k_number-1):
+	for j in range(m):
+	# racunam distance za svaki centroid posebno (city-block metrika) oduzimam od centroida
+		distances_k = distances_k.append((abs(data.iloc[j:j+1,:].reset_index(drop=True) - current_centroid)), ignore_index=True)
+	# setujem novi centroid, najidaljeniji od starog
+	# TO DO: obrisi onaj koji smo uzeli
+	idx = np.argmax(distances_k.sum(axis = 1))
+	current_centroid = data.iloc[idx:idx+1,:].reset_index(drop=True)
+	# ubaci u listu centroida
+	centroids = centroids.append(current_centroid)
+	distances_k = distances_k.iloc[0:0]
+
 #%% ALGORITHM
 def KMeans_experiment(experiment_numbers, feature_weights, max_iteration = 100, dist_measure_type = 'euclidian'):
 	res = KMeansExperimentResponse([], np.zeros(experiment_numbers))
