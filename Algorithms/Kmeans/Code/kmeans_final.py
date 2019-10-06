@@ -8,16 +8,6 @@ import kmeans_lib
 np.set_printoptions(formatter={'float_kind':lambda x: "%.3f" % x})
 pd.set_option('chop_threshold',0.01)
 
-#%% LOAD DATA
-data = pd.read_csv('../../../Data/boston.csv').set_index('country') # ZA BOSTON NE TREBA COUNTRY
-m,n = data.shape
-#%% NORMALIZATION https://en.wikipedia.org/wiki/Standard_score
-data_mean = data.mean()
-data_std = data.std()
-data = (data-data_mean)/data_std
-boston_weights = [1,2,1,1,1,1,1,1,1,1,1,1,1,1]
-life_weights = [1,2,1,1,1]
-
 #%% HELP method
 def FindOutermostCentroids(p_k_number):
 	current_centroid = data.sample(1)
@@ -76,11 +66,35 @@ def KMeans_Predict(p_centroids, p_data):
 	for j in range(m_m):
 		m_assign[j] = np.argmin(((p_data.iloc[j]-p_centroids)**2).sum(axis=1).apply(mt.sqrt))
 	p_data['Cluster'] = m_assign
-	return p_data	
+	return p_data
+
+#%% Silhouette score calculation function
+def SilhouetteScore(p_k, p_labeled_data, p_centroids):
 	
+	m_labeled_data = p_labeled_data
+	m_labeled_data['Silhouette_index'] = 0
+	m_centroids =  p_centroids
+	m_centroids['NearestCluster'] = 0
+	m_m, m_n = m_centroids.shape
+	
+	for i in range(m_m):
+		m_centroids['NearestCluster'][i] = np.argmin(((m_centroids.iloc[i] - m_centroids[~ m_centroids.index.isin([i])])**2).sum(axis=1).apply(mt.sqrt))
+	
+	return m_labeled_data
+	
+#%% LOAD DATA and params configuration
+data = pd.read_csv('../../../Data/boston.csv')#.set_index('country') # ZA BOSTON NE TREBA COUNTRY
+m,n = data.shape
+data_mean = data.mean()
+data_std = data.std()
+data = (data-data_mean)/data_std # Standard_score
+boston_weights = [1,2,1,1,1,1,1,1,1,1,1,1,1,1]
+life_weights = [1,2,1,1,1]
+
 #%% Algorithm usage
 res = kmeans_lib.KMeansExperimentResponse([], np.zeros(7))
 res = KMeans_Fit(5, 7, boston_weights)
 predict_model = KMeans_Predict(res.BestCentroid, data)
-predict_model.groupby(['Cluster']).count().iloc[:,-1]
-
+# predict_model.groupby(['Cluster']).count().iloc[:,-1]
+silhoueteScore = SilhouetteScore(5, predict_model, res.BestCentroid)
+	
