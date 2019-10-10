@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
 import math as mt
-from scipy.spatial.distance import cdist
-from numpy.linalg import norm
 import kmeans_lib
+from sklearn.metrics import silhouette_score
 
 np.set_printoptions(formatter={'float_kind':lambda x: "%.3f" % x})
 pd.set_option('chop_threshold',0.01)
@@ -17,7 +16,7 @@ def FindOutermostCentroids(p_k_number):
 	data_with_no_c = pd.DataFrame()
 
 	for i in range(p_k_number-1):
-		data_with_no_c = data_with_no_c.iloc[0:0]
+		#data_with_no_c = data_with_no_c.iloc[0:0]
 		data_with_no_c = data[~data.isin(centroids)].dropna()
 		for j in range(len(data_with_no_c)):
 			distances_k = distances_k.append((abs(data_with_no_c.iloc[j:j+1,:].reset_index(drop=True) - current_centroid.reset_index(drop=True))), ignore_index=True)
@@ -71,7 +70,18 @@ def KMeans_Predict(p_centroids, p_data):
 
 #%% Silhouette score calculation function
 def GetScalarMeanDistance(p_cluster_data, p_cluster_point):
-	return abs(np.mean(np.mean(p_cluster_data - p_cluster_point)))
+	#print('-------------------------------------------------')
+	#print('Cluster data:')
+	#print(p_cluster_data)
+	#print('Cluster point')
+	#print(p_cluster_point)
+	#print('Cluster poin minus cluster data')
+	#print(p_cluster_point - p_cluster_data)
+	#print('Mean(cluster_point-cluster_data)')
+	#print(np.mean(p_cluster_point - p_cluster_data))
+	resp = np.mean(((p_cluster_point - p_cluster_data)**2).sum(axis=1).apply(mt.sqrt))
+	#print('Mean of Mean: {}'.format(resp))
+	return resp
 
 def SilhouetteScore(p_k, p_labeled_data, p_centroids):
 	
@@ -91,34 +101,50 @@ def SilhouetteScore(p_k, p_labeled_data, p_centroids):
 	# Dodeljujem najblize centroide
 	for i in range(c_row_number):
 		m_centroids['NearestCluster'][i] = np.argmin(((m_centroids.iloc[i] - m_centroids[~ m_centroids.index.isin([i])])**2).sum(axis=1).apply(mt.sqrt))
-
+	
 	# Calculate SilhuetteIndex per observation by formula (a-b) / max(a,b)	
 	for i in range(ld_row_number):
-		a = GetScalarMeanDistance(m_labeled_data.loc[m_labeled_data['Cluster'] == m_labeled_data.iloc[i]['Cluster']], m_labeled_data.iloc[i])
+		#i = 0
+		point = m_labeled_data.iloc[i, :-4]
+		self_cluster_data = m_labeled_data.loc[m_labeled_data['Cluster'] == m_labeled_data.iloc[i]['Cluster']].iloc[:,:-4]
+		a = GetScalarMeanDistance(self_cluster_data[~self_cluster_data.index.isin([i])], point)
 		m_labeled_data['IntraClusterMean'][i] = a
 		current_centroid = int(m_labeled_data.iloc[i]['Cluster'])
 		nearest_centroid = int(m_centroids.iloc[current_centroid]['NearestCluster'])
-		b = GetScalarMeanDistance(m_labeled_data.loc[m_labeled_data['Cluster'] == nearest_centroid],  m_labeled_data.iloc[i])
+		b = GetScalarMeanDistance(m_labeled_data.loc[m_labeled_data['Cluster'] == nearest_centroid].iloc[:,:-4], point)
 		m_labeled_data['NearestClusterMean'][i] = b
-		m_labeled_data['SilhouetteIndex'][i] = float((a - b) / np.maximum(a, b))
+		
+		if a < b:
+			m_labeled_data['SilhouetteIndex'][i] = float(1- a/b)
+		elif a > b:
+			m_labeled_data['SilhouetteIndex'][i] = float(b/a-1)
+		elif a == b:
+			m_labeled_data['SilhouetteIndex'][i] = 0
 	
 	return np.mean(m_labeled_data[['SilhouetteIndex']])
 
 #%% LOAD DATA and params configuration
-data = pd.read_csv('../../../Data/life.csv').set_index('country') # ZA BOSTON NE TREBA COUNTRY
+data = pd.read_csv('../../../Data/boston.csv')#.set_index('country') # ZA BOSTON NE TREBA COUNTRY
 m,n = data.shape
 data_mean = data.mean()
 data_std = data.std()
 data = (data-data_mean)/data_std # Standard_score
 boston_weights = [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 life_weights = [1,1,1,1,1]
+visina_tezina_weights = [1,1]
 
 #%% Algorithm usage
-res = kmeans_lib.KMeansExperimentResponse([], np.zeros(5))
-res = KMeans_Fit(5, 5, life_weights)
+
+res = kmeans_lib.KMeansExperimentResponse([], np.zeros(7))
+
+
+res = KMeans_Fit(3, 7, boston_weights)
 predict_model = KMeans_Predict(res.BestCentroid, data)
+
+score = silhouette_score(predict_model.iloc[:,0:14], predict_model.iloc[:,-1], metric='euclidean')
+
 # predict_model.groupby(['Cluster']).count().iloc[:,-1]
-silhoueteScore = SilhouetteScore(5, predict_model, res.BestCentroid)
+silhoueteScore = SilhouetteScore(3, predict_model, res.BestCentroid)
 silhoueteScore
 
 # 5. -0.378873, 2. -0.673033, 3. -0.354913 4. -0.29497 5. -0.326227 10. -0.544737
