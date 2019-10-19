@@ -3,7 +3,7 @@ import numpy as np
 import copy as c
 
 #%%  UCENJE
-def learn(p_data, outputClass, alfa):
+def learn(data, outputClass, alfa):
 	model = {}
 	apriori = data[outputClass].value_counts()
 	apriori = apriori / apriori.sum()
@@ -34,10 +34,10 @@ def predict(model, slucaj):
 		predictResponse[outputClass]=probability
 	return predictResponse
 #%% KORISCENJE
-data = pd.read_csv('prehlada.csv')
-model = learn(data,'Prehlada',2)
+data = pd.read_csv('kredit.csv')
+model = learn(data,'Vratio', 2)
 
-data_new = pd.read_csv('prehlada_novi.csv')
+data_new = pd.read_csv('kredit_novi.csv')
 for i in range(len(data_new)):
 	point = data_new.loc[i]
 	prediction = predict(model, point)
