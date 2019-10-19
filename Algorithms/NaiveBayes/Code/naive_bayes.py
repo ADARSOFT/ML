@@ -1,17 +1,21 @@
 import pandas as pd
 import numpy as np
+import copy as c
 
 #%%  UCENJE
-def learn(data, outputClass):
+def learn(p_data, outputClass, alfa):
 	model = {}
 	apriori = data[outputClass].value_counts()
 	apriori = apriori / apriori.sum()
 	model['apriori'] = apriori
 
 	for atribut in data.drop(outputClass, axis=1).columns:
-		mat_kont = pd.crosstab(data[atribut],data[outputClass])
-		mat_kont = mat_kont.div(mat_kont.sum())
-		model[atribut] = mat_kont
+		attCatOutFreq = pd.crosstab(data[atribut],data[outputClass])
+		attCatCount = len(attCatOutFreq.index) 
+		counter = attCatOutFreq + alfa
+		denominator = attCatOutFreq.sum(axis = 0) + (attCatCount * alfa)
+		smoothedAdditiveProb = counter.div(denominator)
+		model[atribut] = smoothedAdditiveProb
 
 	return model
 #%% PREDVIDJANJE
@@ -31,7 +35,7 @@ def predict(model, slucaj):
 	return predictResponse
 #%% KORISCENJE
 data = pd.read_csv('prehlada.csv')
-model = learn(data,'Prehlada')
+model = learn(data,'Prehlada',2)
 
 data_new = pd.read_csv('prehlada_novi.csv')
 for i in range(len(data_new)):
@@ -49,6 +53,3 @@ print(data_new)
 # Laplace smoothing (additive)
 # https://medium.com/syncedreview/applying-multinomial-naive-bayes-to-nlp-problems-a-practical-explanation-4f5271768ebf
 # https://en.wikipedia.org/wiki/Additive_smoothing
-
-
-
