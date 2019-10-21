@@ -3,7 +3,10 @@ import numpy as np
 import copy as c
 from scipy.stats import norm
 import matplotlib.pyplot as plt
-
+from math import sqrt
+from math import pi
+from math import exp
+# from scipy.stats import norm # this is for testing purpose
 #%%  UCENJE
 def learn(data, outputClass, alfa):
 	model = {}
@@ -13,11 +16,11 @@ def learn(data, outputClass, alfa):
 	for atribut in data.drop(outputClass, axis=1).columns:	
 		colType = data[atribut].dtype
 		if(colType == np.float64 or colType == np.int64):
-			# to do:
-			model[atribut] = continiousNumericProbability(data[atribut],data[outputClass])
+			res = continiousNumericProbability(data[atribut],data[outputClass])
+			model[atribut] = res
 		else:
 			res = smoothedAdditiveProbability(data[atribut],data[outputClass], alfa)
-			print(type(res))
+			print(res)
 			model[atribut] = res
 	return model
 
@@ -37,20 +40,22 @@ def continiousNumericProbability(data, outputClass):
 	
 	for i in range(len(dataClasses)):
 		i = 0
+		
 		columnData = dataClasses[i].iloc[:,0:1]
-		class_mean = (np.count_nonzero(columnData) / np.sum(columnData))[0]
-		class_std = np.std(dataClasses[i].iloc[:,0:1])
+		class_mean = (np.sum(columnData) / len(columnData) )[0]
+		class_std = np.std(dataClasses[i].iloc[:,0:1].values)
+		
 		for j in range(len(dataClasses[i])):
-			x = dataClasses[i].iloc[0][0]
-			prob = calculate_PDF(x, class_mean, class_std)
-
+			x = dataClasses[i].iloc[8][0]
+			u = dataClasses[i].iloc[3][0]
+			prob = calculate_PDF(u, class_mean, class_std)
+			
 	return 1
 
 #%% Gaussian Probability Density function
 def calculate_PDF(x, mean, stdev):
-	exponent = np.exp(-((x-mean)**2/(2*stdev**2)))
-	result = (1 / (np.sqrt(2*np.pi)*stdev)) * exponent
-	return result
+	exponent = exp(-((x-mean)**2 / (2 * stdev**2 )))
+	return (1 / (sqrt(2 * pi) * stdev)) * exponent
 
 #%% PREDVIDJANJE
 def predict(model, slucaj):
@@ -69,7 +74,7 @@ def predict(model, slucaj):
 	return predictResponse
 
 #%% KORISCENJE
-data = pd.read_csv('drug.csv')
+data = pd.read_csv('prehlada.csv')
 model = learn(data,'Prehlada', 0)
 '''
 for i in data.drop('Prehlada', axis=1).columns:
@@ -95,3 +100,4 @@ https://en.wikipedia.org/wiki/Additive_smoothing
 Gaussian PDF
 https://machinelearningmastery.com/naive-bayes-classifier-scratch-python/
 '''
+# TO DO: Ostaje mi da sada kada sam izracunao verovatnoce, upisem to u response u model.!!
