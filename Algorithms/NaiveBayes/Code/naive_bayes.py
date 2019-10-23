@@ -15,12 +15,8 @@ def learn(data, outputClass, alfa):
 	model['apriori'] = apriori.to_frame()
 	for atribut in data.drop(outputClass, axis=1).columns:	
 		colType = data[atribut].dtype
-		if(colType == np.float64 or colType == np.int64):
-			res = continiousNumericProbability(data[atribut],data[outputClass])
-			model[atribut] = res
-		else:
+		if(colType != np.float64 and colType != np.int64):
 			res = smoothedAdditiveProbability(data[atribut],data[outputClass], alfa)
-			print(res)
 			model[atribut] = res
 	return model
 
@@ -34,23 +30,18 @@ def smoothedAdditiveProbability(attributData, outputClassData, alfa):
 	return smoothedAdditiveProb
 
 #%% Calculate continious numerical attriboute probability 
-def continiousNumericProbability(data, outputClass):
-	dataClasses = data[['K', 'Drug']].groupby('Drug')
-	dataClasses = [dataClasses.get_group(x) for x in dataClasses.groups]
+def continiousNumericProbability(point, continiousAndOutputData, outputClassName):
+
+	dataGroup = continiousAndOutputData.groupby(outputClassName)
+	dataGroup = [dataGroup.get_group(x) for x in dataGroup.groups]
 	
-	for i in range(len(dataClasses)):
-		i = 0
-		
-		columnData = dataClasses[i].iloc[:,0:1]
+	for i in range(len(dataGroup)):
+		columnData = dataGroup[i].iloc[:,0:1]
 		class_mean = (np.sum(columnData) / len(columnData) )[0]
-		class_std = np.std(dataClasses[i].iloc[:,0:1].values)
-		
-		for j in range(len(dataClasses[i])):
-			x = dataClasses[i].iloc[8][0]
-			u = dataClasses[i].iloc[3][0]
-			prob = calculate_PDF(u, class_mean, class_std)
+		class_std = np.std(dataGroup[i].iloc[:,0:1].values)
+		prob = calculate_PDF(point, class_mean, class_std)
 			
-	return 1
+	return prob
 
 #%% Gaussian Probability Density function
 def calculate_PDF(x, mean, stdev):
@@ -58,15 +49,22 @@ def calculate_PDF(x, mean, stdev):
 	return (1 / (sqrt(2 * pi) * stdev)) * exponent
 
 #%% PREDVIDJANJE
-def predict(model, slucaj):
+def predict(model, slucaj, p_outputClass):
 	predictResponse = {}
 	for outputClass in model['apriori'].index:
 		probability = 1
-		for atribut in model:
+		for atribut in data.drop(p_outputClass, axis=1).columns:
 			if atribut == 'apriori':
-				probability = probability * model['apriori'][outputClass]
+				probability = probability * model['apriori'].loc[outputClass,:][0]
 			else:
-				conditionProb = model[atribut][outputClass][slucaj[atribut]]
+				colType = data[atribut].dtype
+				conditionProb = 0
+				
+				if(colType == np.float64 or colType == np.int64):
+					conditionProb = continiousNumericProbability(slucaj[atribut], data[[atribut, p_outputClass]] , data[p_outputClass])
+				else:	
+					conditionProb = model[atribut].loc[slucaj[atribut]][outputClass]
+					
 				exponentValue = np.exp(conditionProb)
 				logarithmOfSumOfExponent = np.log(exponentValue)
 				probability = probability * logarithmOfSumOfExponent
@@ -75,7 +73,10 @@ def predict(model, slucaj):
 
 #%% KORISCENJE
 data = pd.read_csv('prehlada.csv')
-model = learn(data,'Prehlada', 0)
+data = pd.read_csv('drug.csv')
+data_new, data = np.split(data, [int(.05*len(data))])
+label = 'Prehlada'
+model = learn(data,label, 1)
 '''
 for i in data.drop('Prehlada', axis=1).columns:
 	print(model[i])
@@ -83,8 +84,9 @@ for i in data.drop('Prehlada', axis=1).columns:
 data_new = pd.read_csv('prehlada_novi.csv')
 for i in range(len(data_new)):
 	point = data_new.loc[i]
-	prediction = predict(model, point)
+	prediction = predict(model, point, label)
 	data_new.loc[i,'prediction'] = max(prediction, key=lambda x: prediction[x])
+	print(data_new.loc[i,'prediction'])
 	for klasa in prediction:
 		data_new.loc[i,'klasa='+klasa] = prediction[klasa]
 
