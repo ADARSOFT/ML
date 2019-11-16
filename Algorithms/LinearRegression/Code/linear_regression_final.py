@@ -8,25 +8,29 @@ np.set_printoptions(formatter={'float_kind':lambda x: "%.3f" % x})
 #%% PREPARE DATA
 data = pd.read_csv('house.csv')
 
+# Output data (label)
 y = data.iloc[:,[-1]]
+# Input data (features)
 X = data.iloc[:,0:-1]
 
-# (Feature scaling)
+# *Feature scaling* standardization method (mean for all features is 0 and variance is 1)
 X_mean = X.mean()
-X_std = X.std()
-# Standardization method (mean for all features is 0)
-X = (X - X_mean) / X_std 
+X_std = X.std() 
+X = (X - X_mean) / X_std
      
-# Add intercept multiplier (add this after Feature scaling)
-X['X0'] = 1 
+# Add intercept multiplier (add this after feature scaling)
+X.insert(0, 'X0', 1)
 
+# Convert input and output data to np.array (in future we will use to_numpy())
 y = y.values
 X = X.values
 
+# Calculate input data shape
 n,m = X.shape
 
 #%% INITIALIZATION
-# Return random floats in the half-open interval [0.0, 1.0) for Slope's. Use array length as X number of columns (m)
+# Return random floats in the half-open interval [0.0, 1.0) for Slope's. 
+# We use array length as X number of columns (m).
 theta = np.random.random((1,m))
 # Define learning rate for gradient descent
 learning_rate = 0.1
@@ -42,6 +46,7 @@ def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm
 	x_mse_per_iteration = []
 	
 	for iter in range(max_iteration):
+		# Predictions calculation.
 	    # First step is .T -> Transpose, because first matrix have 6 columns, second must have 6 rows
 	    # Second step is do 'dot product' in order to calculate predicted response variable by formula in below:
 	    # Yi = b0 * 1 + b1 * Xi1 + b2 * Xi2 + ... + bK * XiK + E --> MULTIPLE LINEAR REGRESSION
@@ -55,17 +60,19 @@ def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm
 		mean_square_error = np.dot(residuals.T, residuals) / n
 		# sum_squered_error = err.T.dot(err)
 		
-		# Calculate penalty vector
-		penalty_vector = (lambda_penalty * theta)
-		# Exclude intercept
-		penalty_vector[0][X.shape[1]-1] = 0 
+		# *Ridge regression calculation*
+		# SSR + (lambda * theta **2) #(Note: not penalize intercept)
+		theta_squered = theta**2
+		slope_squered = theta_squered[0][1:]
+		intercept_squered = theta_squered[0][0:1]
+		penalty_vector = np.concatenate([intercept_squered, lambda_penalty * slope_squered])
 		
-		# Gradient calculation - Ridge regression - derivative
+		# Gradient descent calculation
 		gradient_vector = (np.dot(residuals.T, X) + penalty_vector) / n
 		
 		# Calculate step_size by multiplying learning_rate and gradient_vector (gradient_vector => data descent to minimum).
 		# step_size = gradient_vector * learning_rate
-		# Calculate new theta - Loss function parameters (old w - step_size)
+		# Calculate new theta - Loss function parameters (old w - step_size) * learning rate
 		theta = theta - gradient_vector * learning_rate
 		
 		# Calculate sum of absolute gradient_vector values
@@ -83,11 +90,11 @@ def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm
 	plt.ylabel('Mean squered error')
 			
 #%% Use linear regression with above function 
-GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm, n, 90)
+GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm, n, 2)
 
 #%% PREDICT
 data_new = pd.read_csv('house_new.csv')
 data_new = (data_new-X_mean)/X_std
-data_new['X0'] = 1
+data_new.insert(0, 'X0', 1)
 prediction = data_new.values.dot(theta.T)
 print(prediction)
