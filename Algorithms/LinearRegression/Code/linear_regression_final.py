@@ -40,7 +40,7 @@ max_iteration = 400
 min_grad_norm = 0.01
 
 #%% Create function with params 
-def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm, n, lambda_penalty = 0):
+def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm, n, lambda_penalty = 1):
 	
 	x_iteration = []
 	x_mse_per_iteration = []
@@ -54,29 +54,24 @@ def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm
 		
 	    # Calculate errors per item (i), in next line we will calculate squered sum. RESIDUALS
 		residuals = (pred - y)
-		
-		# Cost function - Loss function
-		# Calculate mean_square_error (first calculate sum of squered residuals and then devide by n to get the mean)
-		mean_square_error = np.dot(residuals.T, residuals) / n
-		# sum_squered_error = err.T.dot(err)
-		
+
 		# *Ridge regression calculation*
 		# SSR + (lambda * theta **2) #(Note: not penalize intercept)
-		theta_squered = theta**2
-		slope_squered = theta_squered[0][1:]
-		intercept_squered = theta_squered[0][0:1]
-		penalty_vector = np.concatenate([intercept_squered, lambda_penalty * slope_squered])
+		penalty_vector = calculateRidgeRegressionPenalty(theta, lambda_penalty)
 		
 		# Gradient descent calculation
 		gradient_vector = (np.dot(residuals.T, X) + penalty_vector) / n
 		
 		# Calculate step_size by multiplying learning_rate and gradient_vector (gradient_vector => data descent to minimum).
-		# step_size = gradient_vector * learning_rate
+		step_size = learning_rate * gradient_vector
 		# Calculate new theta - Loss function parameters (old w - step_size) * learning rate
-		theta = theta - gradient_vector * learning_rate
+		theta = theta - step_size
 		
 		# Calculate sum of absolute gradient_vector values
 		grad_norm = abs(gradient_vector).sum()
+		
+		# Cost function - Loss function MSE
+		mean_square_error = np.dot(residuals.T, residuals) / n
 		
 		x_iteration.append(iter)
 		x_mse_per_iteration.append(mean_square_error[0][0])
@@ -85,12 +80,22 @@ def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm
 	
 		print(iter, grad_norm, mean_square_error)
 
+	showPlot(x_iteration, x_mse_per_iteration)
+#%% Ridge regression calculation 
+def calculateRidgeRegressionPenalty(theta, lambda_penalty):
+	theta_squered = theta**2
+	slope_squered = theta_squered[0][1:]
+	intercept_squered = theta_squered[0][0:1]
+	return np.concatenate([intercept_squered, lambda_penalty * slope_squered])
+
+#%% Visualisation
+def showPlot(x_iteration, x_mse_per_iteration):
 	plt.plot(x_iteration, x_mse_per_iteration)
 	plt.xlabel('No. of iterations')
 	plt.ylabel('Mean squered error')
-			
+	
 #%% Use linear regression with above function 
-GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm, n, 2)
+GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm, n, 1)
 
 #%% PREDICT
 data_new = pd.read_csv('house_new.csv')
