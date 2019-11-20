@@ -6,7 +6,7 @@ np.random.seed(1)
 np.set_printoptions(formatter={'float_kind':lambda x: "%.3f" % x})
 
 #%% PREPARE DATA
-data = pd.read_csv('house.csv')
+data = pd.read_csv('boston.csv')
 
 # Output data (label)
 y = data.iloc[:,[-1]]
@@ -33,9 +33,9 @@ n,m = X.shape
 # We use array length as X number of columns (m).
 theta = np.random.random((1,m))
 # Define learning rate for gradient descent
-learning_rate = 0.1
+learning_rate = 0.0004
 # Define maximum iteration number
-max_iteration = 400
+max_iteration = 2000
 # Define gradient min norm
 min_grad_norm = 0.01
 
@@ -46,41 +46,73 @@ def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm
 	x_mse_per_iteration = []
 	
 	for iter in range(max_iteration):
-		# Predictions calculation.
-	    # First step is .T -> Transpose, because first matrix have 6 columns, second must have 6 rows
-	    # Second step is do 'dot product' in order to calculate predicted response variable by formula in below:
-	    # Yi = b0 * 1 + b1 * Xi1 + b2 * Xi2 + ... + bK * XiK + E --> MULTIPLE LINEAR REGRESSION
-		pred = np.dot(X, theta.T)
 		
-	    # Calculate errors per item (i), in next line we will calculate squered sum. RESIDUALS
-		residuals = (pred - y)
+		mean_square_error = 0
+		
+		for i in range(n):
+			
+			# Stochastic sample with replacement
+			X_i, y_i = generateRandomSample(X, y)
+			
+			# Predictions calculation.
+		    # First step is .T -> Transpose, because first matrix have 6 columns, second must have 6 rows
+		    # Second step is do 'dot product' in order to calculate predicted response variable by formula in below:
+		    # Yi = b0 * 1 + b1 * Xi1 + b2 * Xi2 + ... + bK * XiK + E --> MULTIPLE LINEAR REGRESSION
+			pred = predict(X_i, theta.T)
+		
+		    # Calculate errors per item (i), in next line we will calculate squered sum. RESIDUALS
+			residuals = (pred - y_i)
 
-		# *Ridge regression calculation*
-		# SSR + (lambda * theta **2) #(Note: not penalize intercept)
-		penalty_vector = calculateRidgeRegressionPenalty(theta, lambda_penalty)
+			# *Ridge regression calculation*
+			# SSR + (lambda * theta **2) #(Note: not penalize intercept)
+			penalty_vector = calculateRidgeRegressionPenalty(theta, lambda_penalty)
 		
-		# Gradient descent calculation
-		gradient_vector = (np.dot(residuals.T, X) + penalty_vector) / n
+			# Gradient descent calculation
+			gradient_vector = (np.dot(residuals.T, X_i) + penalty_vector) / n
 		
-		# Calculate step_size by multiplying learning_rate and gradient_vector (gradient_vector => data descent to minimum).
-		step_size = learning_rate * gradient_vector
-		# Calculate new theta - Loss function parameters (old w - step_size) * learning rate
-		theta = theta - step_size
+			# Calculate step_size by multiplying learning_rate and gradient_vector (gradient_vector => data descent to minimum).
+			step_size = learning_rate * gradient_vector
+			# Calculate new theta - Loss function parameters (old w - step_size) * learning rate
+			theta = theta - step_size
 		
-		# Calculate sum of absolute gradient_vector values
-		grad_norm = abs(gradient_vector).sum()
+			# Calculate sum of absolute gradient_vector values
+			grad_norm = abs(gradient_vector).sum()
 		
-		# Cost function - Loss function MSE
-		mean_square_error = np.dot(residuals.T, residuals) / n
+			# Cost function - Loss function MSE
+			mean_square_error += calcCostMethod2(residuals.T, residuals, n) 
 		
 		x_iteration.append(iter)
-		x_mse_per_iteration.append(mean_square_error[0][0])
+		x_mse_per_iteration.append(mean_square_error)
 		
 		if grad_norm < min_grad_norm or mean_square_error < 10: break
 	
 		print(iter, grad_norm, mean_square_error)
 
 	showPlot(x_iteration, x_mse_per_iteration)
+
+#%% Calculate cost function
+def calcCostMethod1(theta_p, X_p, y_p):
+	m = len(y_p)
+	predictions = X_p.dot(theta_p)
+	cost = (1/2*m) * np.sum(np.square(predictions-y_p))
+	return cost
+
+# Normalized Residual sum of squeres
+def calcCostMethod2(residualsT_p, residuals_p, n_p):
+	cost = np.dot(residualsT_p, residuals_p) / n_p
+	return cost[0][0]
+
+#%% Generate random sample
+def generateRandomSample(X, y):
+	rnd_idx = np.random.randint(0, n)
+	X_i = X[rnd_idx, :].reshape(1, X.shape[1])
+	y_i = y[rnd_idx].reshape(1,1)
+	return X_i, y_i
+
+#%% Predict method
+def predict(features, theta):
+	return np.dot(features, theta)
+
 #%% Ridge regression calculation 
 def calculateRidgeRegressionPenalty(theta, lambda_penalty):
 	theta_squered = theta**2
@@ -101,5 +133,5 @@ GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm, n,
 data_new = pd.read_csv('house_new.csv')
 data_new = (data_new-X_mean)/X_std
 data_new.insert(0, 'X0', 1)
-prediction = data_new.values.dot(theta.T)
+prediction = predict(data_new.values, theta.T)
 print(prediction)
