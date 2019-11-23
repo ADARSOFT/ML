@@ -41,7 +41,7 @@ max_iteration = 1000
 min_grad_norm = 0.01
 
 #%% Create function with params 
-def GD_LinearRegression(X, theta, y, max_iteration, min_grad_norm, n, lambda_penalty = 1):
+def GD_LinearRegression(X, theta, y, max_iteration, min_grad_norm, n, lambda_penalty = 1, lr_scheduler_type = "exp"):
 	
 	x_iteration = []
 	x_mse_per_iteration = []
@@ -49,7 +49,12 @@ def GD_LinearRegression(X, theta, y, max_iteration, min_grad_norm, n, lambda_pen
 	for iter in range(max_iteration):
 		
 		mean_square_error = 0
-		learning_rate = exp_decay(iter)
+		learning_rate = 0
+		
+		if lr_scheduler_type == "step":
+			learning_rate = step_decay(iter)
+		else:
+			learning_rate = exp_decay(iter)
 		
 		for i in range(n):
 			
@@ -128,6 +133,14 @@ def exp_decay(epoch):
 	k =0.2
 	l_rate = initial_rate * mt.exp(-k*epoch)
 	return l_rate 
+
+#%% Calculate step decay
+def step_decay(epoch):
+	initial_lrate = 0.1
+	drop = 0.1
+	epochs_drop = 10
+	lrate = initial_lrate * mt.pow(drop, mt.floor((1+epoch)/epochs_drop))
+	return lrate
 
 #%% Visualisation
 def showPlot(x_iteration, x_mse_per_iteration):
