@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import math as mt
 import matplotlib.pyplot as plt
 plt.rcParams['figure.figsize'] = (12.0, 9.0)
 np.random.seed(1)
@@ -33,14 +34,14 @@ n,m = X.shape
 # We use array length as X number of columns (m).
 theta = np.random.random((1,m))
 # Define learning rate for gradient descent
-learning_rate = 0.0004
+#learning_rate = 0.0004
 # Define maximum iteration number
-max_iteration = 2000
+max_iteration = 1000
 # Define gradient min norm
 min_grad_norm = 0.01
 
 #%% Create function with params 
-def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm, n, lambda_penalty = 1):
+def GD_LinearRegression(X, theta, y, max_iteration, min_grad_norm, n, lambda_penalty = 1):
 	
 	x_iteration = []
 	x_mse_per_iteration = []
@@ -48,6 +49,7 @@ def GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm
 	for iter in range(max_iteration):
 		
 		mean_square_error = 0
+		learning_rate = exp_decay(iter)
 		
 		for i in range(n):
 			
@@ -120,14 +122,21 @@ def calculateRidgeRegressionPenalty(theta, lambda_penalty):
 	intercept_squered = theta_squered[0][0:1]
 	return np.concatenate([intercept_squered, lambda_penalty * slope_squered])
 
+#%% Calculate learning rate Exponential decay by epoch
+def exp_decay(epoch):
+	initial_rate = 0.1
+	k =0.2
+	l_rate = initial_rate * mt.exp(-k*epoch)
+	return l_rate 
+
 #%% Visualisation
 def showPlot(x_iteration, x_mse_per_iteration):
-	plt.plot(x_iteration, x_mse_per_iteration)
-	plt.xlabel('No. of iterations')
-	plt.ylabel('Mean squered error')
+		plt.plot(x_iteration, x_mse_per_iteration)
+		plt.xlabel('No. of iterations')
+		plt.ylabel('Mean squered error')
 	
 #%% Use linear regression with above function 
-GD_LinearRegression(X, theta, y, learning_rate, max_iteration, min_grad_norm, n, 1)
+GD_LinearRegression(X, theta, y, max_iteration, min_grad_norm, n, 1)
 
 #%% PREDICT
 data_new = pd.read_csv('house_new.csv')
