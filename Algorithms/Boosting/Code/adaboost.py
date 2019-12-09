@@ -17,13 +17,14 @@ data = pd.read_csv('drugY.csv')
 X = data.drop('Drug',axis=1)
 y = ConvToMinusOneOrPlusOne(data['Drug'])
 n,m = X.shape
+learning_rate = 0.8
 
 # Convert categorical to numerical data
 X = pd.get_dummies(X)
 
 # Initial instances weights. Same weights for all instances.
 alfas = pd.Series(np.array([1/n]*n), index=data.index)
-ensemble_size = 10
+ensemble_size = 100
 weights = np.zeros(ensemble_size)   # tezine modela u ansamblu, koje odredjuju jacinu prilikom glasanja
 ensemble = []
 
@@ -46,10 +47,10 @@ for i in range(ensemble_size):
 	# Classifiers weights calculation (models weight)
 	# Log can't use negative numbers as params, if 1 is parama then w is 0, there is no impact in reweighting
 	# If w is negative, then his vote we use as opposite in next exp formula
-    w = 1/2 * math.log((1-total_error)/total_error)
+    w = 1/2 * math.log(((1-total_error)/total_error)) * learning_rate
     
     ensemble.append(model)
-    weights[0] = w
+    weights[i] = w
     
 	# Reweighting instances
 	# Step 1: Convert to opposite sign -> model weight and instance weight
@@ -61,7 +62,7 @@ for i in range(ensemble_size):
 	# If exponent is lower then 0, example: np.exp(-1) = 0.367879, in that case we decrease instace alfa
     alfas = alfas * np.exp(ConvToOppositeSign(w) * ConvToOppositeSign(ConvToMinusOneOrPlusOne(error)))
 	
-    # Norm for normalization
+    # Norm for normalization (Sum of alfas is always 1)
     z = alfas.sum()
     alfas = alfas/z
     
@@ -79,5 +80,6 @@ for i,model in enumerate(ensemble):
 predictions = pd.DataFrame([model.predict(X) for model in ensemble]).T
 predictions = np.sign(predictions.dot(weights))
 print('Final ensemble accuracy: {} %'.format(accuracy_score(y,predictions)*100))
+
 
 # https://www.youtube.com/watch?v=UHBmv7qCey4
