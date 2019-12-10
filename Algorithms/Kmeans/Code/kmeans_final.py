@@ -152,7 +152,7 @@ experiments = 4
 silhoueteScoreHistory = []
 init_data = pd.read_csv('../../../Data/visina_tezina.csv')#.set_index('country') # Just for life csv dataset
 
-for i in range(3):
+for i in range(7):
 	clusters = i+2
 	data = copy(init_data)
 	m,n = data.shape
