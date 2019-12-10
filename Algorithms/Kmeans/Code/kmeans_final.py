@@ -46,6 +46,20 @@ def calculateWeightedDistance(dist_measure_type, point, centroids, feature_weigh
 	else:
 		return ((point-centroids)**2).mul(feature_weights).sum(axis=1).apply(mt.sqrt)
 
+#%% Scalar mean distance
+def GetScalarMeanDistance(p_cluster_data, p_cluster_point):
+	resp = np.mean(((p_cluster_point - p_cluster_data)**2).sum(axis=1).apply(mt.sqrt))
+	return resp
+
+#%% CalculateSilhouette index value
+def silhouetteIndexCalculation(a,b):	
+	if a < b:
+		return float(1- a/b)
+	elif a > b:
+		return float(b/a-1)
+	elif a == b:
+		return 0
+	
 #%% ALGORITHM fit
 def fit(total_clusters_number, total_experiments_number, p_feature_weights, p_max_iteration = 100, p_dist_measure_type = 'euclidian'):
 	res = kmeans_lib.KMeansExperimentResponse([], np.zeros(total_experiments_number))
@@ -91,20 +105,6 @@ def predict(p_centroids, p_data):
 		m_assign[j] = int(np.argmin(((p_data.iloc[j]-p_centroids)**2).sum(axis=1).apply(mt.sqrt)))
 	p_data['Cluster'] = m_assign
 	return p_data
-
-#%% Scalar mean distance
-def GetScalarMeanDistance(p_cluster_data, p_cluster_point):
-	resp = np.mean(((p_cluster_point - p_cluster_data)**2).sum(axis=1).apply(mt.sqrt))
-	return resp
-
-#%% CalculateSilhouette index value
-def silhouetteIndexCalculation(a,b):	
-	if a < b:
-		return float(1- a/b)
-	elif a > b:
-		return float(b/a-1)
-	elif a == b:
-		return 0
 
 #%% TASK 5. Silhouette score calculation function
 def silhouetteScore(p_k, labeled_data, centroids):
@@ -152,8 +152,8 @@ experiments = 4
 silhoueteScoreHistory = []
 init_data = pd.read_csv('../../../Data/visina_tezina.csv')#.set_index('country') # Just for life csv dataset
 
-for i in range(10):
-	clusters = i + 2
+for i in range(3):
+	clusters = i+2
 	data = copy(init_data)
 	m,n = data.shape
 	data_mean = data.mean()
