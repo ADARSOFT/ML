@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import math as mt
 import matplotlib.pyplot as plt
+
 plt.rcParams['figure.figsize'] = (12.0, 9.0)
 np.random.seed(1)
 np.set_printoptions(formatter={'float_kind':lambda x: "%.3f" % x})
@@ -127,9 +128,12 @@ def fit(X, theta, y, max_iteration, min_grad_norm, n, lambda_penalty = 1, lr_sch
 			# lambda*theta**2 (Note: not penalize intercept)
 			penalty_vector = calculateRidgeRegressionPenalty(theta, lambda_penalty)
 		
-			# Gradient descent calculation (Mean feature error Lost function)
-			gradient_vector = (np.dot(residuals.T, X_i) + penalty_vector) / n
-		
+			# Simplified gradient descent calculation (with Ridge penalty vector)
+			# Formula from: TMI04.2_linear_regression.pdf, page 21
+			dot_product_Residuals_and_Xi = np.dot(residuals.T, X_i)
+			gradient_vector = (dot_product_Residuals_and_Xi + penalty_vector) / n
+			#gradient_vector = (dot_product_Residuals_and_Xi / n) + penalty_vector 
+			
 			# Calculate step_size by multiplying learning_rate and gradient_vector (gradient_vector => data descent to minimum).
 			step_size = learning_rate * gradient_vector
 			
@@ -141,6 +145,9 @@ def fit(X, theta, y, max_iteration, min_grad_norm, n, lambda_penalty = 1, lr_sch
 		
 			# Cost function - Loss function MSE
 			mean_square_error += calcCostMethod2(residuals.T, residuals, n) 
+			
+			# if grad_norm < min_grad_norm: break
+				
 		
 		x_iteration.append(iter)
 		x_mse_per_iteration.append(mean_square_error)
