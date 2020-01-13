@@ -62,7 +62,7 @@ def generateRandomSample(X, y):
 #%% Ridge regression calculation 
 def calculateRidgeRegressionPenalty(theta, lambda_penalty):
 	# Squere slope params, except intercept
-	slope_squered = (theta**2)[0][1:]
+	slope_squered = (theta*2)[0][1:]
 	
 	# Variant 1 - set intercept to zero
 	intercept = [0]
