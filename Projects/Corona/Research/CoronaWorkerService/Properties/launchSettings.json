@@ -1,0 +1,10 @@
+﻿{
+  "profiles": {
+    "CoronaWorkerService": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
